@@ -1,46 +1,92 @@
 import React from 'react';
-import Image from 'next/image';
-import { motion } from 'framer-motion';
 
-const Snowflake = () => {
-  const points = [
-    { icon: '📞', href: '/contact' },
-    { icon: '🏃', href: '/activity' },
-    { icon: '🔐', href: '/security' },
-    { icon: 'ℹ️', href: '/info' },
-    { icon: '🩺', href: '/health' },
-  ];
+const Snowflake = ({ size = 200, color = 'white', branchLengthRatio = 0.6, subBranchLengthRatio = 0.5, subBranchAngle = 30 }) => {
 
-  const calculatePosition = (index) => {
-    const angle = (index / points.length) * 360;
-    const x = 50 + 40 * Math.cos(angle * Math.PI / 180);
-    const y = 50 + 40 * Math.sin(angle * Math.PI / 180);
-    return { x: `${x}%`, y: `${y}%` };
+  const numPoints = 6;
+
+  const generatePoints = () => {
+    const points = [];
+    for (let i = 0; i < numPoints; i++) {
+      const angle = (i / numPoints) * 360;
+      const x = size / 2 + (size / 2) * Math.cos(angle * Math.PI / 180);
+      const y = size / 2 + (size / 2) * Math.sin(angle * Math.PI / 180);
+      points.push({ x, y });
+    }
+    return points;
+  };
+
+  const points = generatePoints();
+
+  const renderBranch = (start, end) => {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const branchLength = Math.sqrt(dx * dx + dy * dy) * branchLengthRatio;
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    const subBranch1 = {
+      x: end.x + branchLength * Math.cos((angle + subBranchAngle) * Math.PI / 180),
+      y: end.y + branchLength * Math.sin((angle + subBranchAngle) * Math.PI / 180),
+    };
+    const subBranch2 = {
+      x: end.x + branchLength * Math.cos((angle - subBranchAngle) * Math.PI / 180),
+      y: end.y + branchLength * Math.sin((angle - subBranchAngle) * Math.PI / 180),
+    };
+
+    const subBranchLength1 = Math.sqrt(
+      (subBranch1.x - end.x) ** 2 + (subBranch1.y - end.y) ** 2
+    );
+
+    const subBranchLength2 = Math.sqrt(
+      (subBranch2.x - end.x) ** 2 + (subBranch2.y - end.y) ** 2
+    );
+
+
+    return (
+      <g>
+        <line
+          x1={start.x}
+          y1={start.y}
+          x2={end.x}
+          y2={end.y}
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round" // Make line endings rounded
+        />
+
+        <line
+          x1={end.x}
+          y1={end.y}
+          x2={subBranch1.x}
+          y2={subBranch1.y}
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <line
+          x1={end.x}
+          y1={end.y}
+          x2={subBranch2.x}
+          y2={subBranch2.y}
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </g>
+    );
   };
 
   return (
-    <div className="relative w-64 h-64">
-      <Image src="/snowflake.png" alt="Snowflake" layout="fill" objectFit="contain" />
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {points.map((point, index) => {
-        const position = calculatePosition(index);
+        const nextIndex = (index + 1) % numPoints;
         return (
-          <motion.a
-            key={index}
-            href={point.href}
-            className="absolute rounded-full bg-white p-2 shadow-md 
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
-            style={{
-              left: position.x,
-              top: position.y,
-              transform: 'translate(-50%, -50%)',
-            }}
-            whileHover={{ scale: 1.1 }}
-          >
-            {point.icon}
-          </motion.a>
+          <g key={index}>
+            {renderBranch(points[index], points[nextIndex])}
+            {renderBranch(points[index], { x: size - points[nextIndex].x, y: points[nextIndex].y })}
+          </g>
         );
       })}
-    </div>
+    </svg>
   );
 };
 
